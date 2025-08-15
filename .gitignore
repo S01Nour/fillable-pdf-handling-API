@@ -1,0 +1,13 @@
+
+.env
+.env.*
+!.env.example
+/data/
+*.pdf
+*.xlsx
+__pycache__/
+.venv/
+venv/
+gradio_cached_examples/
+.vscode/
+.DS_Store
