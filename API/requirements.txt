@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+pypdf
+reportlab
+openpyxl
+pydantic-settings
+python-multipart
