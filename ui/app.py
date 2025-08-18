@@ -1,7 +1,8 @@
 import os, gradio as gr, requests
 
-API_URL = os.getenv("API_URL", "https://<ton-api>.onrender.com/process")
+API_URL = os.getenv("API_URL")
 API_KEY = os.getenv("API_KEY", "")
+assert API_URL, "API_URL manquante"
 
 def fill_quitus(source_pdf, quitus_pdf, doc_type):
     files = {
@@ -18,11 +19,12 @@ with gr.Blocks() as demo:
     gr.Markdown("## Remplir Quitus (Licence/Master)")
     with gr.Row():
         src = gr.File(label="PDF source (licence/master)", file_types=[".pdf"])
-        q = gr.File(label="Modèle Quitus (PDF)", file_types=[".pdf"])
+        # q = gr.File(label="Modèle Quitus (PDF)", file_types=[".pdf"])
     doc_type = gr.Radio(["licence","master"], value="licence", label="Type de document")
     out_pdf = gr.File(label="Quitus rempli")
     status = gr.Textbox(label="Statut")
     btn = gr.Button("Remplir et télécharger")
-    btn.click(fill_quitus, inputs=[src,q,doc_type], outputs=[out_pdf, status])
+    # btn.click(fill_quitus, inputs=[src,q,doc_type], outputs=[out_pdf, status])
+    btn.click(fill_quitus, inputs=[src,doc_type], outputs=[out_pdf, status])
 
 demo.launch()

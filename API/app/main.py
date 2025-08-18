@@ -8,6 +8,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 import openpyxl
 from .settings import settings
+TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 app = FastAPI(title="Quitus Filler API")
 DATA_DIR = Path("./data"); DATA_DIR.mkdir(exist_ok=True)
@@ -65,14 +66,32 @@ def overlay_text(base_reader: PdfReader, lines: list[tuple[str, float, float]]) 
     out = io.BytesIO(); writer.write(out); out.seek(0)
     return out.read()
 
+def get_template_path(doc_type: str) -> Path:
+    name = "quitus.pdf" 
+    path = TEMPLATES_DIR / name
+    if not path.exists():
+        raise HTTPException(status_code=500, detail=f"Template not found: {path.name}")
+    return path
+
 @app.get("/")
 def root():
     return {"status":"ok","endpoints":["POST /process"]}
 
+# en haut
+from pathlib import Path
+TEMPLATES_DIR = Path(__file__).parent / "templates"
+
+def get_template_path(doc_type: str) -> Path:
+    name = "quitus_master.pdf" if doc_type.lower()=="master" else "quitus_licence.pdf"
+    path = TEMPLATES_DIR / name
+    if not path.exists():
+        raise HTTPException(status_code=500, detail=f"Template not found: {path.name}")
+    return path
+
+# ... remplace l'endpoint par :
 @app.post("/process")
 async def process_quitus(
     source_pdf: UploadFile = File(...),
-    quitus_pdf: UploadFile = File(...),
     doc_type: str = Form(...),          # "licence" | "master"
     x_api_key: str | None = Header(default=None)
 ):
@@ -85,16 +104,19 @@ async def process_quitus(
     full_name = f"{nom} {prenom}".strip()
     filiere = filiere_lic if doc_type.lower()=="licence" else (filiere_master or filiere_lic)
 
-    append_row(doc_type, [nom, prenom, cin, filiere])
+    # ⇩⇩ EXCEL: on déportera en ligne à l'étape 3 ⇩⇩
+    append_row_any(doc_type, [nom, prenom, cin, filiere])
 
-    q_reader = PdfReader(io.BytesIO(await quitus_pdf.read()), strict=False)
+    # Charger le modèle local
+    with open(get_template_path(doc_type), "rb") as fh:
+        q_reader = PdfReader(io.BytesIO(fh.read()), strict=False)
+
     mapping = {"student_nom": full_name, "cin": cin, "filiere_lic": filiere, "filiere_master": filiere}
     fields = get_fields_safe(q_reader)
 
     if fields:
         pdf_out = fill_acroform(q_reader, mapping)
     else:
-        # ajuste x/y ici selon ton modèle
         lines = [(full_name,120,690), (cin,160,665), (filiere,160,640)]
         pdf_out = overlay_text(q_reader, lines)
 
