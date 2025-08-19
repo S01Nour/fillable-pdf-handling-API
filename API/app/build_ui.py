@@ -15,9 +15,9 @@ def build_demo(default_api_url: str = "/process"):
 
     css = f"""
     :root {{
-      --bg: #FFFFFF;
+      --bg: {UI_BG_COLOR} ;
     #   --accent: {UI_ACCENT};
-      --card: {UI_BG_COLOR};
+      --card: #FFFFFF;
       --text: #0f172a;
       --muted: #64748b;
     }}
