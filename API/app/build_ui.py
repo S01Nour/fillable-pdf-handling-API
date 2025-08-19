@@ -16,7 +16,7 @@ def build_demo(default_api_url: str = "/process"):
     css = f"""
     :root {{
       --bg: {UI_BG_COLOR} ;
-    #   --accent: {UI_ACCENT};
+      --accent: {UI_ACCENT};
       --card: #FFFFFF;
       --text: #0f172a;
       --muted: #64748b;
@@ -39,13 +39,21 @@ def build_demo(default_api_url: str = "/process"):
     }}
     #hero .title {{ font-weight: 800; font-size: 1.25rem; line-height: 1.3; }}
     #hero .subtitle {{ color: var(--muted); margin-top: 2px; }}
-    .gradio-container button, .gradio-container .primary {{
-      background: var(--accent) !important;
-      border-color: var(--accent) !important;
-      color: #fff !important;
-      border-radius: 12px !important;
+    
+    .gradio-container button, 
+    .gradio-container .primary,
+    .gradio-container button:not(.secondary) {{  /* Added specificity */
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: #fff !important;
+    border-radius: 12px !important;
+    font-weight: 500 !important;  /* Make text bolder */
+    padding: 8px 16px !important;  /* Slightly larger buttons */
     }}
-    .gradio-container button:hover {{ filter: brightness(0.96); }}
+    .gradio-container button:hover {{
+    filter: brightness(0.96);
+    box-shadow: 0 2px 8px rgba(255, 167, 38, 0.3) !important;  /* Orange glow */
+    }}
     label, .gr-label, .prose :where(h1,h2,h3,h4,h5,h6) {{ color: var(--text) !important; }}
     .upload-area {{
       background-color: #FFE9B2 !important;  /* Light orange drop area */
