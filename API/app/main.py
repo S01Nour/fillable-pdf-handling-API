@@ -219,6 +219,10 @@ def append_row_all_fields_sheets(doc_type: str, values: dict[str, str]) -> None:
     ws.append_row(row, value_input_option="USER_ENTERED")
 
 # ------------------------------- Routes -----------------------------
+# Redirection claire de la racine vers l'UI (évite le //)
+@app.get("/", include_in_schema=False)
+def root_redirect():
+    return RedirectResponse(url="/app", status_code=307)
 @app.get("/manifest.json")
 def manifest():
     return JSONResponse({
@@ -308,4 +312,4 @@ def download_excel(x_api_key: Optional[str] = Header(default=None)):
     )
 
 demo = build_demo(default_api_url="/process")  # même service
-app = gr.mount_gradio_app(app, demo, path="/") # l'UI sert "/" ; l'API reste dispo (ex: /process, /health, /docs)
+app = gr.mount_gradio_app(app, demo, path="/app") # l'UI sert "/" ; l'API reste dispo (ex: /process, /health, /docs)
