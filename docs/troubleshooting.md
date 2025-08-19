@@ -1,5 +1,5 @@
 # `docs/troubleshooting.md`
-```markdown
+
 # Troubleshooting
 
 ## 400 – Bad Request
