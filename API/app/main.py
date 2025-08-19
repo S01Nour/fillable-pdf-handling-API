@@ -20,9 +20,6 @@ from .settings import settings
 import gradio as gr
 from .build_ui import build_demo  # adapte l'import si besoin (chemin relatif au repo)
 
-demo = build_demo(default_api_url="/process")  # même service
-app = gr.mount_gradio_app(app, demo, path="/") # l'UI sert "/" ; l'API reste dispo (ex: /process, /health, /docs)
-
 # --- logging global (lisible sur Render aussi) ---
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +42,10 @@ TEMPLATES_DIR = BASE_DIR / "templates"          # un seul modèle: quitus.pdf
 DATA_DIR = BASE_DIR.parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 EXCEL_PATH = DATA_DIR / "students_data.xlsx"
+
+demo = build_demo(default_api_url="/process")  # même service
+app = gr.mount_gradio_app(app, demo, path="/") # l'UI sert "/" ; l'API reste dispo (ex: /process, /health, /docs)
+
 
 # ------------------------------ Sécurité ----------------------------
 def require_api_key(x_api_key: Optional[str] = Header(default=None)) -> None:
