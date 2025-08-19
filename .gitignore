@@ -229,3 +229,4 @@ gradio_cached_examples/
 *.pem
 *service-account*.json
 credentials*.json"ui/" 
+"ui/" 
