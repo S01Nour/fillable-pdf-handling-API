@@ -15,9 +15,9 @@ def build_demo(default_api_url: str = "/process"):
 
     css = f"""
     :root {{
-      --bg: {UI_BG_COLOR};
-      --accent: {UI_ACCENT};
-      --card: #ffffff;
+      --bg: #FFFFFF;
+    #   --accent: {UI_ACCENT};
+      --card: {UI_BG_COLOR};
       --text: #0f172a;
       --muted: #64748b;
     }}
@@ -48,7 +48,7 @@ def build_demo(default_api_url: str = "/process"):
     .gradio-container button:hover {{ filter: brightness(0.96); }}
     label, .gr-label, .prose :where(h1,h2,h3,h4,h5,h6) {{ color: var(--text) !important; }}
     .upload-area {{
-      background-color: #FFE0B2 !important;  /* Light orange drop area */
+      background-color: #FFE9B2 !important;  /* Light orange drop area */
       border: 2px dashed var(--accent) !important;
       border-radius: 16px !important;
     }}
