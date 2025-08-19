@@ -8,8 +8,8 @@ def build_demo(default_api_url: str = "/process"):
     load_dotenv()
 
     # --- Thème / assets ---
-    UI_BG_COLOR = os.getenv("UI_BG_COLOR", "#F8FAFC")  # fond doux
-    UI_ACCENT   = os.getenv("UI_ACCENT",   "#0F172A")  # boutons/accents
+    UI_BG_COLOR = os.getenv("UI_BG_COLOR", "#FFFFFF")  # Changed to white background
+    UI_ACCENT   = os.getenv("UI_ACCENT",   "#FFA726")  # Changed to light orange accent color
     LOGO_PATH   = os.getenv("UI_LOGO_PATH") or str((Path(__file__).parent / "assets" / "logo.png"))
     HAS_LOGO    = os.path.exists(LOGO_PATH)
 
@@ -26,7 +26,9 @@ def build_demo(default_api_url: str = "/process"):
       color: var(--text) !important;
     }}
     .gradio-container {{
-      max-width: 1100px; margin: 0 auto; padding: 24px;
+      max-width: 1200px !important;  /* Made wider */
+      margin: 0 auto; 
+      padding: 24px;
     }}
     .card {{
       background: var(--card) !important;
@@ -45,10 +47,15 @@ def build_demo(default_api_url: str = "/process"):
     }}
     .gradio-container button:hover {{ filter: brightness(0.96); }}
     label, .gr-label, .prose :where(h1,h2,h3,h4,h5,h6) {{ color: var(--text) !important; }}
+    .upload-area {{
+      background-color: #FFE0B2 !important;  /* Light orange drop area */
+      border: 2px dashed var(--accent) !important;
+      border-radius: 16px !important;
+    }}
     """
 
     # --- Config API ---
-    API_URL = os.getenv("API_URL", default_api_url)  # peut être absolue (https://...) ou relative (/process)
+    API_URL = os.getenv("API_URL", default_api_url)
     API_KEY = os.getenv("API_KEY", "")
 
     # --- Helpers URL absolue ---
@@ -71,7 +78,7 @@ def build_demo(default_api_url: str = "/process"):
             return None
         if isinstance(f, (bytes, bytearray)):
             return bytes(f)
-        path = getattr(f, "name", f)  # Gradio File -> .name, sinon c'est déjà un chemin
+        path = getattr(f, "name", f)
         with open(path, "rb") as fh:
             return fh.read()
 
@@ -108,7 +115,6 @@ def build_demo(default_api_url: str = "/process"):
         return out_path, "OK"
 
     def download_excel(request: gr.Request):
-        # base depuis API_URL si absolue, sinon depuis la requête courante
         if API_URL and (API_URL.startswith("http://") or API_URL.startswith("https://")):
             p = urlparse(API_URL)
             base = f"{p.scheme}://{p.netloc}"
@@ -150,21 +156,25 @@ def build_demo(default_api_url: str = "/process"):
 
         # Entrées
         with gr.Row():
-            with gr.Column(scale=7, elem_classes="card"):
-                src = gr.File(label="PDF source (licence/master)", file_types=[".pdf"])
-            with gr.Column(scale=5, elem_classes="card"):
+            with gr.Column(scale=8, elem_classes="card"):  # Made wider
+                src = gr.File(
+                    label="PDF source (licence/master)", 
+                    file_types=[".pdf"],
+                    elem_classes="upload-area"  # Added custom class for drop area
+                )
+            with gr.Column(scale=4, elem_classes="card"):
                 dtype = gr.Radio(["licence", "master"], value="licence", label="Type de document")
                 status = gr.Textbox(label="Statut", interactive=False)
                 with gr.Row():
                     btn_fill  = gr.Button("Remplir et télécharger")
-                    btn_excel = gr.Button("Télécharger l’Excel")
+                    btn_excel = gr.Button("Télécharger l'Excel")
 
         # Sorties
         with gr.Row():
             out_pdf  = gr.File(label="Quitus rempli", elem_classes="card")
             excel_dl = gr.File(label="students_data.xlsx", elem_classes="card")
 
-        # Hooks (toujours à l’intérieur du Blocks)
+        # Hooks (toujours à l'intérieur du Blocks)
         btn_fill.click(fn=fill_quitus, inputs=[src, dtype], outputs=[out_pdf, status])
         btn_excel.click(fn=download_excel, inputs=None, outputs=[excel_dl, status])
 
