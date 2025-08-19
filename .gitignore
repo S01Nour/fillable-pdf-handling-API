@@ -226,3 +226,6 @@ gradio_cached_examples/
 /API/data/
 /data/
 !API/app/templates/*.pdf
+*.pem
+*service-account*.json
+credentials*.json

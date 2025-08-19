@@ -11,6 +11,9 @@ from pypdf.generic import NameObject, BooleanObject
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 import openpyxl
+import os, json
+import gspread
+from google.oauth2.service_account import Credentials
 
 from .settings import settings
 
@@ -115,6 +118,101 @@ def append_row_all_fields(doc_type: str, values: Dict[str, str]) -> None:
     ws.append([values.get(col, "") for col in header])
     wb.save(EXCEL_PATH)
 
+# -------- Google Sheets (persistant) --------
+_GS_CLIENT = None
+_GS_SHEET = None
+
+GS_SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    # Ajoute Drive si tu veux créer le fichier automatiquement
+    "https://www.googleapis.com/auth/drive",
+]
+
+def _gs_client():
+    global _GS_CLIENT
+    if _GS_CLIENT is None:
+        sa_json = settings.GCP_SA_JSON
+        if not sa_json:
+            raise RuntimeError("GCP_SA_JSON manquant dans les variables d'environnement")
+        creds = Credentials.from_service_account_info(json.loads(sa_json), scopes=GS_SCOPES)
+        _GS_CLIENT = gspread.authorize(creds)
+    return _GS_CLIENT
+
+def _gs_sheet():
+    global _GS_SHEET
+    if _GS_SHEET is not None:
+        return _GS_SHEET
+
+    gc = _gs_client()
+    sheet_id = settings.GSHEET_ID
+    sheet_name = settings.GSHEET_NAME
+    allow_create = bool(settings.GSHEET_CREATE)
+
+    try:
+        if sheet_id:
+            sh = gc.open_by_key(sheet_id)
+        else:
+            try:
+                sh = gc.open(sheet_name)
+            except gspread.SpreadsheetNotFound:
+                if not allow_create:
+                    raise
+                sh = gc.create(sheet_name)
+    except Exception as e:
+        raise RuntimeError(f"Impossible d'ouvrir le Google Sheet: {e}")
+
+    _GS_SHEET = sh
+    return _GS_SHEET
+
+
+def _gs_ensure_worksheet(sh, title: str):
+    try:
+        return sh.worksheet(title)
+    except gspread.exceptions.WorksheetNotFound:
+        return sh.add_worksheet(title=title, rows=100, cols=26)
+
+def _gs_read_header(ws) -> list[str]:
+    values = ws.row_values(1) if ws.row_count >= 1 else []
+    return [h.strip() for h in values] if values else []
+
+def _gs_write_header(ws, header: list[str]):
+    """Écrit l'entête sur la ligne 1, en étendant au besoin."""
+    if not header:
+        return
+    # (facultatif) s'assurer d'avoir assez de colonnes
+    needed = len(header) - ws.col_count
+    if needed > 0:
+        ws.add_cols(needed)
+
+    # Version la plus simple et sûre : commencer à A1 et laisser gspread étendre
+    ws.update("A1", [header])
+
+def append_row_all_fields_sheets(doc_type: str, values: dict[str, str]) -> None:
+    """
+    Persiste TOUS les champs dans Google Sheets.
+    - Feuille 'Licence' ou 'Master'
+    - Ajoute dynamiquement les colonnes manquantes
+    - Aligne la ligne sur l'entête
+    """
+    sh = _gs_sheet()
+    ws = _gs_ensure_worksheet(sh, "Licence" if doc_type == "licence" else "Master")
+
+    header = _gs_read_header(ws)
+    if not header:
+        header = list(values.keys())
+        _gs_write_header(ws, header)
+    else:
+        # ajoute les nouvelles colonnes à la fin
+        changed = False
+        for k in values.keys():
+            if k not in header:
+                header.append(k); changed = True
+        if changed:
+            _gs_write_header(ws, header)
+
+    row = [values.get(col, "") for col in header]
+    ws.append_row(row, value_input_option="USER_ENTERED")
+
 # ------------------------------- Routes -----------------------------
 @app.get("/")
 def root():
@@ -151,12 +249,14 @@ async def process_quitus(
     full_name = f"{nom} {prenom}".strip()
     filiere_finale = filiere_lic if dt == "licence" else (filiere_master or filiere_lic)
 
-    # 3) Excel (TOUS les champs) + gestion fichier verrouillé
-    try:
+   
+    # 3) Persistance
+    mode = settings.EXCEL_MODE.lower()
+    if mode == "gsheets":
+        append_row_all_fields_sheets(dt, all_values)
+    else:
         append_row_all_fields(dt, all_values)
-    except PermissionError:
-        raise HTTPException(status_code=423, detail="Close Excel then retry (students_data.xlsx is locked)")
-
+   
     # 4) remplir modèle
     with open(get_template_path(), "rb") as fh:
         q_reader = PdfReader(io.BytesIO(fh.read()), strict=False)
