@@ -5,6 +5,28 @@ from dotenv import load_dotenv
 
 def build_demo(default_api_url: str = "/process"):
     load_dotenv()
+    # --- config UI ---
+    # couleur de fond (env > défaut)
+    UI_BG_COLOR = os.getenv("UI_BG_COLOR", "#0f172a")  # change-la à ton goût
+    # chemin logo (env > défaut local)
+    LOGO_PATH = os.getenv("UI_LOGO_PATH") or str(Path(__file__).parent / "assets" / "logo.png")
+    HAS_LOGO = os.path.exists(LOGO_PATH)
+
+    # CSS minimal : fond + un peu de spacing
+    css = f"""
+    body, .gradio-container {{
+        background: {UI_BG_COLOR} !important;
+    }}
+    #header {{
+        display:flex; align-items:center; gap:12px; margin-bottom: 8px;
+    }}
+    #brand-title {{
+        color: #e5e7eb; font-weight: 600; font-size: 1.125rem; /* slate-200 */
+    }}
+    #subtitle {{
+        color: #94a3b8; font-size: 0.875rem; margin-top:-6px;  /* slate-400 */
+    }}
+    """
     API_URL = os.getenv("API_URL", default_api_url)   # peut être absolue ou relative
     API_KEY = os.getenv("API_KEY", "")
 
@@ -88,14 +110,22 @@ def build_demo(default_api_url: str = "/process"):
         return out_path, "OK"
 
     # ------------ UI ------------
-    with gr.Blocks(title="Quitus Filler") as demo:
-        gr.Markdown("## Remplir Quitus (Licence/Master)")
+    with gr.Blocks(title="Quitus Filler", css=css) as demo:
+        with gr.Row(elem_id="header"):
+            if HAS_LOGO:
+                gr.Image(value=LOGO_PATH, show_label=False, height=56)
+            with gr.Column(scale=1):
+                gr.Markdown('<div id="brand-title">Quitus Filler</div>')
+                gr.Markdown('<div id="subtitle">Generate filled quitus & log data to Sheets</div>')
+
         with gr.Row():
             src   = gr.File(label="PDF source (licence/master)", file_types=[".pdf"])
             dtype = gr.Radio(["licence","master"], value="licence", label="Type de document")
+
         out_pdf   = gr.File(label="Quitus rempli")
         excel_dl  = gr.File(label="students_data.xlsx")
         status    = gr.Textbox(label="Statut", interactive=False)
+
         with gr.Row():
             gr.Button("Remplir et télécharger").click(
                 fill_quitus, inputs=[src, dtype], outputs=[out_pdf, status]
