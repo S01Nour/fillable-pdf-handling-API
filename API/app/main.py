@@ -301,8 +301,57 @@ def health():
     }
 
 @app.get("/download/excel")
-def download_excel(x_api_key: Optional[str] = Header(default=None)):
+def download_excel(
+    sheet: Optional[str] = Query(None, description="Licence | Master (vide = les deux)"),
+    x_api_key: Optional[str] = Header(default=None),
+):
     require_api_key(x_api_key)
+
+    mode = settings.EXCEL_MODE.lower()
+    if mode == "gsheets":
+        # Export Google Sheets -> XLSX en mémoire
+        sh = _gs_sheet()
+
+        # Prépare le classeur de sortie
+        wb = openpyxl.Workbook()
+        # supprime la feuille par défaut si présente
+        if wb.active and wb.active.max_row == 1 and wb.active.max_column == 1 and not wb.active["A1"].value:
+            wb.remove(wb.active)
+
+        def add_ws(title: str):
+            try:
+                ws_g = sh.worksheet(title)
+            except gspread.exceptions.WorksheetNotFound:
+                return False
+            values = ws_g.get_all_values()  # liste de listes
+            ws_x = wb.create_sheet(title=title)
+            for row in values:
+                ws_x.append(row)
+            # fige l'entête si elle existe
+            if values:
+                ws_x.freeze_panes = "A2"
+            return True
+
+        added = False
+        if sheet:
+            added = add_ws(sheet)
+        else:
+            # essaie dans cet ordre
+            for t in ("Licence", "Master"):
+                added = add_ws(t) or added
+
+        if not added:
+            raise HTTPException(status_code=404, detail="No data in Google Sheets yet")
+
+        buf = io.BytesIO()
+        wb.save(buf); buf.seek(0)
+        return StreamingResponse(
+            buf,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="students_data.xlsx"'}
+        )
+
+    # ---- mode local (fichier sur disque) ----
     if not EXCEL_PATH.exists():
         raise HTTPException(status_code=404, detail="No Excel yet")
     return FileResponse(
