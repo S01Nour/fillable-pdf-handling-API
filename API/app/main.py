@@ -5,7 +5,7 @@ import sys, logging, re, unicodedata
 from fastapi.responses import FileResponse
 from pypdf.errors import PdfReadError, PdfStreamError
 from fastapi import FastAPI, UploadFile, File, Form, Header, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import NameObject, BooleanObject
 from reportlab.pdfgen import canvas
@@ -43,8 +43,6 @@ DATA_DIR = BASE_DIR.parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
 EXCEL_PATH = DATA_DIR / "students_data.xlsx"
 
-demo = build_demo(default_api_url="/process")  # même service
-app = gr.mount_gradio_app(app, demo, path="/") # l'UI sert "/" ; l'API reste dispo (ex: /process, /health, /docs)
 
 
 # ------------------------------ Sécurité ----------------------------
@@ -221,10 +219,15 @@ def append_row_all_fields_sheets(doc_type: str, values: dict[str, str]) -> None:
     ws.append_row(row, value_input_option="USER_ENTERED")
 
 # ------------------------------- Routes -----------------------------
-@app.get("/")
-def root():
-    return {"status": "ok", "endpoints": ["POST /process"]}
-
+@app.get("/manifest.json")
+def manifest():
+    return JSONResponse({
+        "name": "Quitus Filler",
+        "short_name": "Quitus",
+        "start_url": "/",
+        "display": "standalone",
+        "icons": []
+    })
 @app.post("/process")
 async def process_quitus(
     source_pdf: UploadFile = File(...),
@@ -303,3 +306,6 @@ def download_excel(x_api_key: Optional[str] = Header(default=None)):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         filename="students_data.xlsx",
     )
+
+demo = build_demo(default_api_url="/process")  # même service
+app = gr.mount_gradio_app(app, demo, path="/") # l'UI sert "/" ; l'API reste dispo (ex: /process, /health, /docs)
