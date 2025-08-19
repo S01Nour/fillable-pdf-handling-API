@@ -18,7 +18,7 @@ from google.oauth2.service_account import Credentials
 from .settings import settings
 # --- monter l'UI Gradio à la racine ---
 import gradio as gr
-from ui.build_ui import build_demo  # adapte l'import si besoin (chemin relatif au repo)
+from .build_ui import build_demo  # adapte l'import si besoin (chemin relatif au repo)
 
 demo = build_demo(default_api_url="/process")  # même service
 app = gr.mount_gradio_app(app, demo, path="/") # l'UI sert "/" ; l'API reste dispo (ex: /process, /health, /docs)
