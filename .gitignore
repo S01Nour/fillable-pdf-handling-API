@@ -228,4 +228,4 @@ gradio_cached_examples/
 !API/app/templates/*.pdf
 *.pem
 *service-account*.json
-credentials*.json
+credentials*.json"ui/" 
