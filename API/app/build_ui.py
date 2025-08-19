@@ -9,7 +9,7 @@ def build_demo(default_api_url: str = "/process"):
 
     # --- Thème / assets ---
     UI_BG_COLOR = os.getenv("UI_BG_COLOR", "#FFFFFF")  # Changed to white background
-    UI_ACCENT   = os.getenv("UI_ACCENT",   "#FFA726")  # Changed to light orange accent color
+    UI_ACCENT   = os.getenv("UI_ACCENT",   "#FFF9BE")  # Changed to light orange accent color
     LOGO_PATH   = os.getenv("UI_LOGO_PATH") or str((Path(__file__).parent / "assets" / "logo.png"))
     HAS_LOGO    = os.path.exists(LOGO_PATH)
 
