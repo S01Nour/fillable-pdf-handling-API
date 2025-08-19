@@ -2,7 +2,7 @@ import io
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 import sys, logging, re, unicodedata
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pypdf.errors import PdfReadError, PdfStreamError
 from fastapi import FastAPI, UploadFile, File, Form, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse, JSONResponse
